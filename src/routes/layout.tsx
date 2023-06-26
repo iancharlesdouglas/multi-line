@@ -28,11 +28,11 @@ export default component$(() => {
   useStyles$(styles);
   return (
     <>
-      <Header />
+      {/* <Header /> */}
       <main>
         <Slot />
       </main>
-      <Footer />
+      {/* <Footer /> */}
     </>
   );
 });
