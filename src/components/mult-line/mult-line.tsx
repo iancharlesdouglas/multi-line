@@ -21,9 +21,11 @@ type Trend = {
 };
 
 export const MultiLine = component$(() => {
-  const width = 960;
-  const height = 500;
+  const svgWidth = 960;
+  const svgHeight = 500;
   const margin: Margin = {left: 50, top: 20, right: 80, bottom: 30};
+  const width = svgWidth - margin.left - margin.right;
+  const height = svgHeight - margin.top - margin.bottom;
   const data: Timescale[] = [
     {
       'timescale': '早', 
@@ -72,9 +74,10 @@ export const MultiLine = component$(() => {
     z.domain(['totalAmount', 'totalProfit', 'totalRevenue']);
 
     const trends = z.domain().map(name => ({name, values: data.map(item => ({timescale: item.timescale, total: item[name]}))}));
-console.log('trends', trends);
     x.domain(data.map(d => d.timescale));
     y.domain([0, d3.max(trends, c => d3.max(c.values, v => v.total))]);
+    console.log(x('早'));
+    console.log(x('午'));
 
     // Legend
     const legend = g.selectAll('g')
@@ -108,12 +111,23 @@ console.log('trends', trends);
       .attr('d', d => line(d.values))
       .style('stroke', d => z(d.name));
 
+    // Axes
+    g.append('g')
+      .attr('class', 'axis axis-x')
+      .attr('transform', `translate(0, ${height})`)
+      .call(d3.axisBottom(x));
+
+    g.append('g')
+      .attr('class', 'axis axis-y')
+      .call(d3.axisLeft(y).ticks(10));
+
     // Hover lines
     const focus = g.append('g')
       .attr('class', 'focus')
       .attr('class', 'x-hover-line hover-line')
-      .style('stoke-dasharray', '3,3')
+      .style('stroke-dasharray', '3,3')
       .style('stroke-width', '2px')
+      .style('stroke', 'black')
       .style('display', 'none');
 
     focus.append('line')
@@ -121,22 +135,48 @@ console.log('trends', trends);
       .attr('y1', 0)
       .attr('y2', height);
 
-    const timescales = data.map(name => name.timescale);
+    // Hover figures
+    const points = g.selectAll('.points')
+      .data(trends)
+      .enter()
+      .append('g')
+      .attr('class', 'points')
+      .append('text');
+
+    trend 
+      .style('fill', '#fff')
+      .style('stroke', d => z(d.name))
+      .selectAll('circle.line')
+      .data(d => d.values)
+      .enter()
+      .append('circle')
+      .attr('r', 5)
+      .style('stroke-width', 3)
+      .attr('cx', d => x(d.timescale))
+      .attr('cy', d => y(d.total));
+
+    const timescales = data.map(name => x(name.timescale));
 
     function mouseover() {
       focus.style('display', null);
+      d3.selectAll('.points text').style('display', null);
     }
 
     function mouseout() {
       focus.style('display', 'none');
+      d3.selectAll('.points text').style('display', 'none');
     }
 
-    function mousemove(event) {
+    const mousemove = (event) => {
       const i = d3.bisect(timescales, event.x, 1);
-      const di = data[i - 1];
-      const xi = di.timescale);
-      focus.attr('transform', `translate(${x(di.timescale)}, 0)`);
-    }
+      const xPos = timescales[i - 1];
+      focus.attr('transform', `translate(${xPos}, 0)`);
+      d3.selectAll('.points text')
+        .attr('x', d => xPos + 10)
+        .attr('y', d => y(d.values[i - 1].total) - 5)
+        .text(d => d.values[i - 1].total)
+        .style('fill', d => z(d.name));
+    };
 
     svg.append('rect')
       .attr('transform', `translate(${margin.left}, ${margin.top})`)
@@ -148,5 +188,5 @@ console.log('trends', trends);
       .on('mouseout', mouseout)
       .on('mousemove', mousemove);
   });
-  return <svg width={width} height={height} ref={svgRef}></svg>;
+  return <svg width={svgWidth} height={svgHeight} ref={svgRef}></svg>;
 });
