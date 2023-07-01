@@ -1,4 +1,4 @@
-import { component$, useSignal, useVisibleTask$ } from "@builder.io/qwik";
+import { component$,  jsx,  useVisibleTask$ } from "@builder.io/qwik";
 import * as d3 from 'd3';
 
 type Margin = {
@@ -56,10 +56,10 @@ export const MultiLine = component$(() => {
       'totalProfit': '總收入金額',
       'totalRevenue': '總分潤金額'
   };
-  const svgRef = useSignal<Element>();
+  
   useVisibleTask$(() => {
     const svg = d3.select('svg');
-    const g = svg.append('g')
+    const g = svg.select('g')
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
     
     // Ranges
@@ -74,13 +74,12 @@ export const MultiLine = component$(() => {
     z.domain(['totalAmount', 'totalProfit', 'totalRevenue']);
 
     const trends = z.domain().map(name => ({name, values: data.map(item => ({timescale: item.timescale, total: item[name]}))}));
+    console.log('trends', trends);
     x.domain(data.map(d => d.timescale));
     y.domain([0, d3.max(trends, c => d3.max(c.values, v => v.total))]);
-    console.log(x('早'));
-    console.log(x('午'));
 
     // Legend
-    const legend = g.selectAll('g')
+    const legend = g.selectAll('g.legend')
       .data(trends)
       .enter()
       .append('g')
@@ -188,5 +187,27 @@ export const MultiLine = component$(() => {
       .on('mouseout', mouseout)
       .on('mousemove', mousemove);
   });
-  return <svg width={svgWidth} height={svgHeight} ref={svgRef}></svg>;
+  // const rect = jsx("rect", {width: 100, height: 100, stroke: 'red', fill: 'transparent', onmouseover$: $(() => (console.log('mouseover')))});
+  // const svg = jsx("svg", {children: rect});
+  // return svg;
+  // const span = jsx("span", {children: ["hello"]});
+  // return jsx("p", {children: [span]});
+  // // return createElement("p", {});
+  // // const rect = '<rect stroke="red" width={100} height={100}></rect>';
+  // // const Rect: FunctionComponent = () => "<div>";
+  // // return jsx("HTMLDivElement", {width: 100});
+
+  const legendRects = d3.range(0, 3).map(index => jsx('rect', {x: 690, y: 205 - 20 * index, width: 10, height: 10}));
+  const legendTexts = d3.range(0, 3).map(index => jsx('text', {x: 702, y: 215 - 20 * index, style: 'fill: black', children: [`Item ${index + 1}`]}));
+  const legends = d3.range(0, 3).map(index => jsx('g', {class: 'legend', children: [legendRects[index], legendTexts[index]]}));
+  const g = jsx('g', {transform: 'translate(50, 20)', children: legends});
+  const svg = jsx('svg', {width: svgWidth, height: svgHeight, children: [g]});
+  return svg;
+  // return <svg width={svgWidth} height={svgHeight}>
+  //   <g transform="translate(50, 20)">
+  //     <g class="legend"><rect x="690" y="205" width="10" height="10" style="fill: rgb(3, 104, 136);"></rect><text x="702" y="215" style="fill: black;">銷售數量</text></g>
+  //     <g class="legend"><rect x="690" y="185" width="10" height="10" style="fill: rgb(13, 131, 60);"></rect><text x="702" y="195" style="fill: black;">總收入金額</text></g>
+  //     <g class="legend"><rect x="690" y="165" width="10" height="10" style="fill: rgb(210, 57, 42);"></rect><text x="702" y="175" style="fill: black;">總分潤金額</text></g>
+  //   </g>
+  // </svg>;
 });
